@@ -1,0 +1,16 @@
+{application, loki,
+ [{description, "KV store with locks"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { loki_app, []}},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, []},
+  {links, []}
+ ]}.
