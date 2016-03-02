@@ -1,6 +1,6 @@
 -record(store, {name,               % Name of the loki instance
                 backend,            % Backend used
-                lock :: boolean(),  % Boolean indicating whether locks are required
+                lock_table,         % Reference to the lock table
                 config,             % Config specific to the backend
                 options             % Additional options
                }).
