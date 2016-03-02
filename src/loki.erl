@@ -18,7 +18,6 @@
          put/3,
          get/2,
          delete/2,
-         update/3,
          update_fun/3, update_fun/4
         ]).
 
@@ -26,12 +25,14 @@
 
 -type loki() :: #store{}.
 -type name() :: atom().
+-type ref() :: term(). %% TODO list out all specific types of backend returns
 -type key() :: term().
 -type value() :: term().
 -type error() :: {error, term()}.
 
 -export_type([loki/0,
               name/0,
+              ref/0,
               key/0,
               value/0]).
 
@@ -42,14 +43,16 @@
 %% @doc Start a new instance of loki with specified backend (ets backend by
 %% default).
 %% TODO create type for config and options
--spec start(name(), list(), list()) -> {ok, loki()} | error().
+%% TODO Implement unique names? Is it necessary? (Will need a manager for it)
+-spec start(name(), list(), list()) -> {ok, loki()}.
 start(Name, Config, Options) ->
     Backend = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
     {ok, LockTable} = loki_lock:new(),
     %% TODO check return values
-    ok = Backend:start(Name, Config),
+    {ok, Ref} = Backend:start(Name, Config),
     {ok, #store{name = Name,
                 backend = Backend,
+                ref = Ref,
                 lock_table = LockTable,
                 config = Config,
                 options = Options}}.
@@ -60,7 +63,7 @@ stop(#store{backend = Backend} = Store) ->
     ok = Backend:stop(Store),
     ok = loki_lock:delete(Store#store.lock_table).
 
-%% @doc Put key value into store
+%% @doc Put key value into store. Overwrites existing value.
 -spec put(loki(), key(), value()) -> ok | error().
 put(#store{backend = Backend} = Store, Key, Value) ->
     lock_exec(Store#store.lock_table, Key,
@@ -77,12 +80,6 @@ get(#store{backend = Backend} = Store, Key) ->
 delete(#store{backend = Backend} = Store, Key) ->
     lock_exec(Store#store.lock_table, Key,
               fun() -> ok = Backend:delete(Store, Key) end).
-
-%% @doc Update given key with new value (overwrites existing value)
--spec update(loki(), key(), value()) -> ok | error().
-update(#store{backend = Backend} = Store, Key, Value) ->
-    lock_exec(Store#store.lock_table, Key,
-              fun() -> ok = Backend:update(Store, Key, Value) end).
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives the current value indexed by the key.
