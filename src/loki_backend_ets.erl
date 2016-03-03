@@ -7,7 +7,8 @@
          put/3,
          get/2,
          delete/2,
-         update_fun/3, update_fun/4
+         update/3,
+         update_value/4
         ]).
 
 %% TODO Do we need a heir?
@@ -40,11 +41,10 @@ delete(Store, Key) ->
     true = ets:delete(Store#store.ref, Key),
     ok.
 
--spec update_fun(loki:loki(), loki:key(),
+-spec update(loki:loki(), loki:key(),
                      fun((loki:value()) -> loki:value())) ->
     ok | loki:error().
-
-update_fun(Store, Key, Fun) ->
+update(Store, Key, Fun) ->
     Value = case ?MODULE:get(Store, Key) of
                 {error, not_found} -> undefined;
                 {ok, V}            -> V
@@ -52,10 +52,10 @@ update_fun(Store, Key, Fun) ->
     UpdatedValue = Fun(Key, Value),
     ?MODULE:put(Store, Key, UpdatedValue).
 
--spec update_fun(loki:loki(), loki:key(), loki:value(),
+-spec update_value(loki:loki(), loki:key(), loki:value(),
                  fun((loki:value(), loki:value()) -> loki:value())) ->
     ok | loki:error().
-update_fun(Store, Key, NewValue, Fun) ->
+update_value(Store, Key, NewValue, Fun) ->
     OldValue = case ?MODULE:get(Store, Key) of
                    {error, not_found} -> undefined;
                    {ok, V}            -> V

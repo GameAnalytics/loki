@@ -15,13 +15,16 @@
 
 -export([start/3,
          stop/1,
-         put/3,
+         put/3, put/4,
          get/2,
          delete/2,
-         update_fun/3, update_fun/4
+         update/3, update/4,
+         update_value/4, update_value/5
         ]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
+
+-define(DEFAULT_TIMEOUT, infinity).
 
 -type loki() :: #store{}.
 -type name() :: atom().
@@ -65,12 +68,17 @@ stop(#store{backend = Backend} = Store) ->
 
 %% @doc Put key value into store. Overwrites existing value.
 -spec put(loki(), key(), value()) -> ok | error().
-put(#store{backend = Backend} = Store, Key, Value) ->
+put(Store, Key, Value) ->
+    put(Store, Key, Value, ?DEFAULT_TIMEOUT).
+
+%% @doc @see put/3 with timeout
+-spec put(loki(), key(), value(), timeout()) -> ok | error().
+put(#store{backend = Backend} = Store, Key, Value, Timeout) ->
     lock_exec(Store#store.lock_table, Key,
-              fun() -> ok = Backend:put(Store, Key, Value) end).
+              fun() -> ok = Backend:put(Store, Key, Value) end,
+              Timeout).
 
 %% @doc Get value for given key
-%% TODO Do we need locks for reads?
 -spec get(loki(), key()) -> {ok, value()} | error().
 get(#store{backend = Backend} = Store, Key) ->
     Backend:get(Store, Key).
@@ -83,31 +91,77 @@ delete(#store{backend = Backend} = Store, Key) ->
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives the current value indexed by the key.
--spec update_fun(loki(), key(),
-                 fun((key(), value()) -> value())) -> ok | error().
-update_fun(#store{backend = Backend} = Store, Key, Fun) ->
+-spec update(loki(), key(), fun((key(), value()) -> value())) -> ok | error().
+update(Store, Key, Fun) ->
+    update(Store, Key, Fun, ?DEFAULT_TIMEOUT).
+
+%% @doc @see update/3 with timeout.
+-spec update(loki(), key(), fun((key(), value()) -> value()), timeout()) ->
+    ok | error().
+update(#store{backend = Backend} = Store, Key, Fun, Timeout) ->
     lock_exec(Store#store.lock_table, Key,
-              fun() -> Backend:update_fun(Store, Key, Fun) end).
+              fun() -> Backend:update(Store, Key, Fun) end,
+              Timeout).
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives both, the existing value indexed by key and new value
 %% passed to it externally.
--spec update_fun(loki(), key(), value(),
-                 fun((key(), value(), value()) -> value())) -> ok | error().
-update_fun(#store{backend = Backend} = Store, Key, Value, Fun) ->
+-spec update_value(loki(), key(), value(),
+                   fun((key(), value(), value()) -> value())) -> ok | error().
+update_value(Store, Key, Value, Fun) ->
+    update_value(Store, Key, Value, Fun, ?DEFAULT_TIMEOUT).
+
+%% @doc @see update_value/4 with timeout.
+-spec update_value(loki(), key(), value(),
+                 fun((key(), value(), value()) -> value()), timeout()) ->
+    ok | error().
+update_value(#store{backend = Backend} = Store, Key, Value, Fun, Timeout) ->
     lock_exec(Store#store.lock_table, Key,
-              fun() -> Backend:update_fun(Store, Key, Value, Fun) end).
+              fun() -> Backend:update_value(Store, Key, Value, Fun) end,
+              Timeout).
 
 %%--------------------------------------------------------------------
 %% Internal functions
 %%--------------------------------------------------------------------
 
+%% Acquire lock and execute given function, error if lock cannot be acquired
 lock_exec(LockTable, Key, Fun) ->
     case loki_lock:acquire(LockTable, Key) of
         {ok, success} ->
             Result = Fun(),
             loki_lock:release(LockTable, Key),
             Result;
-        {error, locked} = Error ->
-            Error
+        {error, locked} ->
+            {error, locked}
+    end.
+
+%% Same as lock_exec/3 but use erlang:yield/0 to release the scheduler and try
+%% again either for ever (infinity) or immediately (0) or given interval.
+%% Note: erlang:yield/0 is equivalent to sleeping for 1ms.
+lock_exec(LockTable, Key, Fun, infinity = Timeout) ->
+    case lock_exec(LockTable, Key, Fun) of
+        {error, locked} ->
+            true = erlang:yield(),
+            lock_exec(LockTable, Key, Fun, Timeout);
+        Result ->
+            Result
+    end;
+lock_exec(LockTable, Key, Fun, 0) ->
+    lock_exec(LockTable, Key, Fun);
+lock_exec(LockTable, Key, Fun, Timeout) ->
+    Start = os:timestamp(),
+    lock_exec(LockTable, Key, Fun, Start, Timeout).
+
+lock_exec(LockTable, Key, Fun, Start, Timeout) ->
+    case (timer:now_diff(os:timestamp(), Start) div 1000) >= Timeout of
+        true ->
+            {error, timeout};
+        false ->
+            case lock_exec(LockTable, Key, Fun) of
+                {error, locked} ->
+                    true = erlang:yield(),
+                    lock_exec(LockTable, Key, Fun, Start, Timeout);
+                Result ->
+                    Result
+            end
     end.

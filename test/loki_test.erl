@@ -26,11 +26,11 @@ simple_run() ->
     ?assertEqual(Value, ReceivedValue1),
     ?assertEqual({error, not_found}, loki:get(Store, unknown_key)),
 
-    ok = loki:update_fun(Store, Key, fun(_K, V) -> V + 1 end),
+    ok = loki:update(Store, Key, fun(_K, V) -> V + 1 end),
     {ok, ReceivedValue2} = loki:get(Store, Key),
     ?assertEqual(Value + 1, ReceivedValue2),
 
-    ok = loki:update_fun(Store, Key, 100, fun(_K, OldV, NewV) -> OldV + NewV  end),
+    ok = loki:update_value(Store, Key, 100, fun(_K, OldV, NewV) -> OldV + NewV  end),
     {ok, ReceivedValue3} = loki:get(Store, Key),
     ?assertEqual(Value + 101, ReceivedValue3),
 
