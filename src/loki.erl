@@ -83,8 +83,8 @@ delete(#store{backend = Backend} = Store, Key) ->
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives the current value indexed by the key.
--spec update_fun(loki(), key(), fun((value()) -> value())) ->
-    ok | error().
+-spec update_fun(loki(), key(),
+                 fun((key(), value()) -> value())) -> ok | error().
 update_fun(#store{backend = Backend} = Store, Key, Fun) ->
     lock_exec(Store#store.lock_table, Key,
               fun() -> Backend:update_fun(Store, Key, Fun) end).
@@ -92,8 +92,8 @@ update_fun(#store{backend = Backend} = Store, Key, Fun) ->
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives both, the existing value indexed by key and new value
 %% passed to it externally.
--spec update_fun(loki(), key(), value(), fun((value(), value()) -> value())) ->
-    ok | error().
+-spec update_fun(loki(), key(), value(),
+                 fun((key(), value(), value()) -> value())) -> ok | error().
 update_fun(#store{backend = Backend} = Store, Key, Value, Fun) ->
     lock_exec(Store#store.lock_table, Key,
               fun() -> Backend:update_fun(Store, Key, Value, Fun) end).

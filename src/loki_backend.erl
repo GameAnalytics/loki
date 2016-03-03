@@ -23,9 +23,9 @@
     ok.
 
 -callback update_fun(loki:loki(), loki:key(),
-                     fun((loki:value()) -> loki:value())) ->
+                     fun((loki:key(), loki:value()) -> loki:value())) ->
     ok | loki:error().
 
 -callback update_fun(loki:loki(), loki:key(), loki:value(),
-                     fun((loki:value(), loki:value()) -> loki:value())) ->
+                     fun((loki:key(), loki:value(), loki:value()) -> loki:value())) ->
     ok | loki:error().

@@ -49,7 +49,7 @@ update_fun(Store, Key, Fun) ->
                 {error, not_found} -> undefined;
                 {ok, V}            -> V
             end,
-    UpdatedValue = Fun(Value),
+    UpdatedValue = Fun(Key, Value),
     ?MODULE:put(Store, Key, UpdatedValue).
 
 -spec update_fun(loki:loki(), loki:key(), loki:value(),
@@ -60,5 +60,5 @@ update_fun(Store, Key, NewValue, Fun) ->
                    {error, not_found} -> undefined;
                    {ok, V}            -> V
                end,
-    UpdatedValue = Fun(OldValue, NewValue),
+    UpdatedValue = Fun(Key, OldValue, NewValue),
     ?MODULE:put(Store, Key, UpdatedValue).

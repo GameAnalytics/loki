@@ -50,6 +50,7 @@ delete(Tid) ->
 %% @doc Acquire the lock for the given key
 -spec acquire(ets:tid(), loki:key()) -> {ok, success} | {error, locked}.
 acquire(Tid, Key) ->
+    %% TODO Do we need a ref?
     Ref = erlang:make_ref(),
     case ets:insert_new(Tid, {Key, Ref}) of
         true ->
