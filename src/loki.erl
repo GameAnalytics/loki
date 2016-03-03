@@ -26,15 +26,17 @@
 
 -define(DEFAULT_TIMEOUT, infinity).
 
--type loki() :: #store{}.
+-type store() :: #store{}.
+-type backend() :: #backend{}.
 -type name() :: atom().
 -type ref() :: term(). %% TODO list out all specific types of backend returns
 -type key() :: term().
 -type value() :: term().
 -type error() :: {error, term()}.
 
--export_type([loki/0,
+-export_type([store/0,
               name/0,
+              backend/0,
               ref/0,
               key/0,
               value/0]).
@@ -47,77 +49,79 @@
 %% default).
 %% TODO create type for config and options
 %% TODO Implement unique names? Is it necessary? (Will need a manager for it)
--spec start(name(), list(), list()) -> {ok, loki()}.
+-spec start(name(), list(), list()) -> {ok, store()}.
 start(Name, Config, Options) ->
-    Backend = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
+    Mod = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
     {ok, LockTable} = loki_lock:new(),
     %% TODO check return values
-    {ok, Ref} = Backend:start(Name, Config),
+    {ok, Backend} = Mod:start(Name, Config),
     {ok, #store{name = Name,
+                mod = Mod,
                 backend = Backend,
-                ref = Ref,
                 lock_table = LockTable,
-                config = Config,
                 options = Options}}.
 
 %% @doc Stop the store
--spec stop(loki()) -> ok | error().
-stop(#store{backend = Backend} = Store) ->
-    ok = Backend:stop(Store),
-    ok = loki_lock:delete(Store#store.lock_table).
+-spec stop(store()) -> ok | error().
+stop(#store{mod = Mod, lock_table = LockTable, backend = Backend}) ->
+    ok = Mod:stop(Backend),
+    ok = loki_lock:delete(LockTable).
 
 %% @doc Put key value into store. Overwrites existing value.
--spec put(loki(), key(), value()) -> ok | error().
+-spec put(store(), key(), value()) -> ok | error().
 put(Store, Key, Value) ->
     put(Store, Key, Value, ?DEFAULT_TIMEOUT).
 
 %% @doc @see put/3 with timeout
--spec put(loki(), key(), value(), timeout()) -> ok | error().
-put(#store{backend = Backend} = Store, Key, Value, Timeout) ->
-    lock_exec(Store#store.lock_table, Key,
-              fun() -> ok = Backend:put(Store, Key, Value) end,
+-spec put(store(), key(), value(), timeout()) -> ok | error().
+put(#store{mod = Mod, lock_table = LockTable, backend = Backend},
+    Key, Value, Timeout) ->
+    lock_exec(LockTable, Key,
+              fun() -> ok = Mod:put(Backend, Key, Value) end,
               Timeout).
 
 %% @doc Get value for given key
--spec get(loki(), key()) -> {ok, value()} | error().
-get(#store{backend = Backend} = Store, Key) ->
-    Backend:get(Store, Key).
+-spec get(store(), key()) -> {ok, value()} | error().
+get(#store{mod = Mod, backend = Backend}, Key) ->
+    Mod:get(Backend, Key).
 
 %% @doc Delete a key value pair specified by the given key
--spec delete(loki(), key()) -> ok | error().
-delete(#store{backend = Backend} = Store, Key) ->
-    lock_exec(Store#store.lock_table, Key,
-              fun() -> ok = Backend:delete(Store, Key) end).
+-spec delete(store(), key()) -> ok | error().
+delete(#store{mod = Mod, lock_table = LockTable, backend = Backend}, Key) ->
+    lock_exec(LockTable, Key,
+              fun() -> ok = Mod:delete(Backend, Key) end).
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives the current value indexed by the key.
--spec update(loki(), key(), fun((key(), value()) -> value())) -> ok | error().
+-spec update(store(), key(), fun((key(), value()) -> value())) -> ok | error().
 update(Store, Key, Fun) ->
     update(Store, Key, Fun, ?DEFAULT_TIMEOUT).
 
 %% @doc @see update/3 with timeout.
--spec update(loki(), key(), fun((key(), value()) -> value()), timeout()) ->
+-spec update(store(), key(), fun((key(), value()) -> value()), timeout()) ->
     ok | error().
-update(#store{backend = Backend} = Store, Key, Fun, Timeout) ->
-    lock_exec(Store#store.lock_table, Key,
-              fun() -> Backend:update(Store, Key, Fun) end,
+update(#store{mod = Mod, lock_table = LockTable, backend = Backend}, Key, Fun,
+       Timeout) ->
+    lock_exec(LockTable, Key,
+              fun() -> Mod:update(Backend, Key, Fun) end,
               Timeout).
 
 %% @doc Update given key with new value obtained by calling given function.
 %% The function receives both, the existing value indexed by key and new value
 %% passed to it externally.
--spec update_value(loki(), key(), value(),
+-spec update_value(store(), key(), value(),
                    fun((key(), value(), value()) -> value())) -> ok | error().
 update_value(Store, Key, Value, Fun) ->
     update_value(Store, Key, Value, Fun, ?DEFAULT_TIMEOUT).
 
 %% @doc @see update_value/4 with timeout.
--spec update_value(loki(), key(), value(),
-                 fun((key(), value(), value()) -> value()), timeout()) ->
+-spec update_value(store(), key(), value(),
+                   fun((key(), value(), value()) -> value()), timeout()) ->
     ok | error().
-update_value(#store{backend = Backend} = Store, Key, Value, Fun, Timeout) ->
-    lock_exec(Store#store.lock_table, Key,
-              fun() -> Backend:update_value(Store, Key, Value, Fun) end,
+update_value(#store{mod = Mod, lock_table = LockTable, backend = Backend},
+             Key, Value, Fun, Timeout) ->
+    lock_exec(LockTable, Key,
+              fun() -> Mod:update_value(Backend, Key, Value, Fun) end,
               Timeout).
 
 %%--------------------------------------------------------------------

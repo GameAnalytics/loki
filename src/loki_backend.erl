@@ -8,25 +8,25 @@
 -include("loki.hrl").
 
 -callback start(loki:name(), list()) ->
-    {ok, loki:ref()} | loki:error().
+    {ok, loki:backend()} | loki:error().
 
--callback stop(loki:loki()) ->
+-callback stop(loki:backend()) ->
     ok.
 
--callback put(loki:loki(), loki:key(), loki:value()) ->
+-callback put(loki:backend(), loki:key(), loki:value()) ->
     ok.
 
--callback get(loki:loki(), loki:key()) ->
+-callback get(loki:backend(), loki:key()) ->
     {ok, loki:value()}.
 
--callback delete(loki:loki(), loki:key()) ->
+-callback delete(loki:backend(), loki:key()) ->
     ok.
 
--callback update(loki:loki(), loki:key(),
+-callback update(loki:backend(), loki:key(),
                  fun((loki:key(), loki:value()) -> loki:value())) ->
     ok | loki:error().
 
--callback update_value(loki:loki(), loki:key(), loki:value(),
+-callback update_value(loki:backend(), loki:key(), loki:value(),
                        fun((loki:key(), loki:value(), loki:value()) ->
                        loki:value())) ->
     ok | loki:error().

@@ -14,51 +14,52 @@
 %% TODO Do we need a heir?
 
 -spec start(loki:name(), list()) -> {ok, loki:ref()}.
-start(Name, Config) ->
-    {ok, ets:new(Name, Config)}.
+start(Name, Options) ->
+    {ok, #backend{ref = ets:new(Name, Options),
+                  options = Options}}.
 
--spec stop(loki:loki()) -> ok.
-stop(Store) ->
-    ets:delete(Store#store.ref),
+-spec stop(loki:backend()) -> ok.
+stop(#backend{ref = Ref}) ->
+    ets:delete(Ref),
     ok.
 
--spec put(loki:loki(), loki:key(), loki:value()) -> ok.
-put(Store, Key, Value) ->
-    true = ets:insert(Store#store.ref, {Key, Value}),
+-spec put(loki:backend(), loki:key(), loki:value()) -> ok.
+put(#backend{ref = Ref}, Key, Value) ->
+    true = ets:insert(Ref, {Key, Value}),
     ok.
 
--spec get(loki:loki(), loki:key()) -> {ok, loki:value()} | loki:error().
-get(Store, Key) ->
-    case ets:lookup(Store#store.ref, Key) of
+-spec get(loki:backend(), loki:key()) -> {ok, loki:value()} | loki:error().
+get(#backend{ref = Ref}, Key) ->
+    case ets:lookup(Ref, Key) of
         [] ->
             {error, not_found};
         [{Key, Value}] ->
             {ok, Value}
     end.
 
--spec delete(loki:loki(), loki:key()) -> ok.
-delete(Store, Key) ->
-    true = ets:delete(Store#store.ref, Key),
+-spec delete(loki:backend(), loki:key()) -> ok.
+delete(#backend{ref = Ref}, Key) ->
+    true = ets:delete(Ref, Key),
     ok.
 
--spec update(loki:loki(), loki:key(),
-                     fun((loki:value()) -> loki:value())) ->
+-spec update(loki:backend(), loki:key(),
+             fun((loki:value()) -> loki:value())) ->
     ok | loki:error().
-update(Store, Key, Fun) ->
-    Value = case ?MODULE:get(Store, Key) of
+update(Backend, Key, Fun) ->
+    Value = case ?MODULE:get(Backend, Key) of
                 {error, not_found} -> undefined;
                 {ok, V}            -> V
             end,
     UpdatedValue = Fun(Key, Value),
-    ?MODULE:put(Store, Key, UpdatedValue).
+    ?MODULE:put(Backend, Key, UpdatedValue).
 
--spec update_value(loki:loki(), loki:key(), loki:value(),
-                 fun((loki:value(), loki:value()) -> loki:value())) ->
+-spec update_value(loki:backend(), loki:key(), loki:value(),
+                   fun((loki:value(), loki:value()) -> loki:value())) ->
     ok | loki:error().
-update_value(Store, Key, NewValue, Fun) ->
-    OldValue = case ?MODULE:get(Store, Key) of
+update_value(Backend, Key, NewValue, Fun) ->
+    OldValue = case ?MODULE:get(Backend, Key) of
                    {error, not_found} -> undefined;
                    {ok, V}            -> V
                end,
     UpdatedValue = Fun(Key, OldValue, NewValue),
-    ?MODULE:put(Store, Key, UpdatedValue).
+    ?MODULE:put(Backend, Key, UpdatedValue).

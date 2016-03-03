@@ -1,7 +1,9 @@
 -record(store, {name,               % Name of the loki instance
-                backend,            % Backend used
-                ref,                % Reference to the backend
+                mod,                % Backend used
+                backend,            % Backend config
                 lock_table,         % Reference to the lock table
-                config,             % Config specific to the backend
                 options             % Additional options
                }).
+
+-record(backend, {ref,              % Reference to the backend
+                  options}).        % Options specific to the backend
