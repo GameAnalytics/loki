@@ -30,3 +30,7 @@
                        fun((loki:key(), loki:value(), loki:value()) ->
                        loki:value())) ->
     ok | loki:error().
+
+-callback fold(loki:backend(),
+               fun((loki:key(), loki:value(), term()) -> term()), term()) ->
+    term().

@@ -8,7 +8,8 @@
          get/2,
          delete/2,
          update/3,
-         update_value/4
+         update_value/4,
+         fold/3
         ]).
 
 %% TODO Do we need a heir?
@@ -63,3 +64,10 @@ update_value(Backend, Key, NewValue, Fun) ->
                end,
     UpdatedValue = Fun(Key, OldValue, NewValue),
     ?MODULE:put(Backend, Key, UpdatedValue).
+
+-spec fold(loki:backend(),
+           fun((loki:key(), loki:value(), term()) -> term()), term()) -> term().
+fold(#backend{ref = Ref}, Fun, AccIn) ->
+    ets:foldl(fun({Key, Value}, Acc) ->
+                      Fun(Key, Value, Acc)
+              end, AccIn, Ref).

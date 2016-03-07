@@ -6,7 +6,8 @@
 loki_test_() ->
     {setup, fun setup/0, fun teardown/1,
      [
-      {"Simple run",       fun simple_run/0}
+      {"Simple run",    fun simple_run/0},
+      {"Fold",          fun fold/0}
      ]}.
 
 setup() ->
@@ -35,3 +36,12 @@ simple_run() ->
     ?assertEqual(Value + 101, ReceivedValue3),
 
     ok = loki:stop(Store).
+
+fold() ->
+    {ok, Store} = loki:start(test_kv, [], []),
+
+    [loki:put(Store, E, E) || E <- lists:seq(1, 100)],
+
+    Sum = loki:fold(Store, fun(_K, V, Acc) -> Acc + V end, 0),
+
+    ?assertEqual(100 * 101 div 2, Sum).

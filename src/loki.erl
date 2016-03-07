@@ -19,7 +19,8 @@
          get/2,
          delete/2,
          update/3, update/4,
-         update_value/4, update_value/5
+         update_value/4, update_value/5,
+         fold/3
         ]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
@@ -123,6 +124,11 @@ update_value(#store{mod = Mod, lock_table = LockTable, backend = Backend},
     lock_exec(LockTable, Key,
               fun() -> Mod:update_value(Backend, Key, Value, Fun) end,
               Timeout).
+
+%% @doc Fold over all key value pairs
+-spec fold(store(), fun((key(), value(), term()) -> term()), term()) -> term().
+fold(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
+    Mod:fold(Backend, Fun, Acc).
 
 %%--------------------------------------------------------------------
 %% Internal functions
