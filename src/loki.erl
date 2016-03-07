@@ -20,7 +20,9 @@
          delete/2,
          update/3, update/4,
          update_value/4, update_value/5,
-         fold/3
+         fold/3,
+         from_list/2,
+         to_list/1
         ]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
@@ -129,6 +131,16 @@ update_value(#store{mod = Mod, lock_table = LockTable, backend = Backend},
 -spec fold(store(), fun((key(), value(), term()) -> term()), term()) -> term().
 fold(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
     Mod:fold(Backend, Fun, Acc).
+
+%% @doc Insert key value pairs into loki from the given list
+-spec from_list(store(), list({key(), value()})) -> ok.
+from_list(#store{mod = Mod, backend = Backend}, List) ->
+    Mod:from_list(Backend, List).
+
+%% @doc Return all key value pairs as list
+-spec to_list(store()) -> list({key(), value()}).
+to_list(#store{mod = Mod, backend = Backend}) ->
+    Mod:to_list(Backend).
 
 %%--------------------------------------------------------------------
 %% Internal functions

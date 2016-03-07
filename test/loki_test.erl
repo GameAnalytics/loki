@@ -6,8 +6,9 @@
 loki_test_() ->
     {setup, fun setup/0, fun teardown/1,
      [
-      {"Simple run",    fun simple_run/0},
-      {"Fold",          fun fold/0}
+      {"Simple run",         fun simple_run/0},
+      {"Fold",               fun fold/0},
+      {"List import export", fun list_import_export/0}
      ]}.
 
 setup() ->
@@ -45,3 +46,14 @@ fold() ->
     Sum = loki:fold(Store, fun(_K, V, Acc) -> Acc + V end, 0),
 
     ?assertEqual(100 * 101 div 2, Sum).
+
+list_import_export() ->
+    {ok, Store} = loki:start(test_kv, [], []),
+
+    List = [{E, E} || E <- lists:seq(1, 100)],
+
+    ok = loki:from_list(Store, List),
+
+    ResultList = loki:to_list(Store),
+
+    ?assertEqual(List, lists:sort(ResultList)).

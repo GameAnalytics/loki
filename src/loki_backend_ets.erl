@@ -9,7 +9,9 @@
          delete/2,
          update/3,
          update_value/4,
-         fold/3
+         fold/3,
+         from_list/2,
+         to_list/1
         ]).
 
 %% TODO Do we need a heir?
@@ -71,3 +73,13 @@ fold(#backend{ref = Ref}, Fun, AccIn) ->
     ets:foldl(fun({Key, Value}, Acc) ->
                       Fun(Key, Value, Acc)
               end, AccIn, Ref).
+
+-spec from_list(loki:backend(), list({loki:key(), loki:value()})) ->
+    ok | loki:error().
+from_list(#backend{ref = Ref}, List) ->
+    [ets:insert(Ref, {K, V}) || {K, V} <- List],
+    ok.
+
+-spec to_list(loki:backend()) -> list({loki:key(), loki:value()}).
+to_list(#backend{ref = Ref}) ->
+    ets:tab2list(Ref).
