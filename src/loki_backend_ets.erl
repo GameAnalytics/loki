@@ -18,7 +18,9 @@
 
 -spec start(loki:name(), list()) -> {ok, loki:ref()}.
 start(Name, Options) ->
-    {ok, #backend{ref = ets:new(Name, Options),
+    {ok, #backend{ref = ets:new(Name, [public,
+                                       {read_concurrency, true},
+                                       {write_concurrency, true}] ++ Options),
                   options = Options}}.
 
 -spec stop(loki:backend()) -> ok.

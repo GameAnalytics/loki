@@ -50,9 +50,7 @@ delete(Tid) ->
 %% @doc Acquire the lock for the given key
 -spec acquire(ets:tid(), loki:key()) -> {ok, success} | {error, locked}.
 acquire(Tid, Key) ->
-    %% TODO Do we need a ref?
-    Ref = erlang:make_ref(),
-    case ets:insert_new(Tid, {Key, Ref}) of
+    case ets:insert_new(Tid, {Key}) of
         true ->
             {ok, success};
         false ->
@@ -73,11 +71,12 @@ init([]) ->
         {ok, #state{}}.
 
 handle_call(new, _From, State) ->
-    LockTable = ets:new(?MODULE, [set,              % Ensure its a set
-                                  public]),         % Skip gen_server for access
-                                 % TODO benchmark with these options
-                                 % {read_concurrency, true},
-                                 % {write_concurrency, true}]
+    %% ETS options
+    %% - public: skip the gen_server for the writes
+    %% - write_concurrency: handle lots of writes
+    %% - read_concurrency: not enabled, makes it faster
+    LockTable = ets:new(?MODULE, [public,
+                                  {write_concurrency, true}]),
     {reply, {ok, LockTable}, State};
 
 handle_call(_Request, _From, State) ->
