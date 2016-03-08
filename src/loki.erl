@@ -52,7 +52,7 @@
 %% default).
 %% TODO create type for config and options
 %% TODO Implement unique names? Is it necessary? (Will need a manager for it)
--spec start(name(), list(), list()) -> {ok, store()}.
+-spec start(name(), list(), list()) -> {ok, store()} | error().
 start(Name, Config, Options) ->
     Mod = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
     {ok, LockTable} = loki_lock:new(),
@@ -66,8 +66,8 @@ start(Name, Config, Options) ->
 
 %% @doc Stop the store
 -spec stop(store()) -> ok | error().
-stop(#store{mod = Mod, lock_table = LockTable, backend = Backend}) ->
-    ok = Mod:stop(Backend),
+stop(#store{mod = Mod, lock_table = LockTable, backend = Backend, name = Name}) ->
+    ok = Mod:stop(Backend, Name),
     ok = loki_lock:delete(LockTable).
 
 %% @doc Put key value into store. Overwrites existing value.

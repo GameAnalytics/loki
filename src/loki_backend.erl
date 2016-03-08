@@ -10,7 +10,7 @@
 -callback start(loki:name(), list()) ->
     {ok, loki:backend()} | loki:error().
 
--callback stop(loki:backend()) ->
+-callback stop(loki:backend(), loki:name()) ->
     ok.
 
 -callback put(loki:backend(), loki:key(), loki:value()) ->
