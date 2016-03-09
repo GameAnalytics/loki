@@ -3,7 +3,8 @@
 -include("loki.hrl").
 
 -export([start/2,
-         stop/2,
+         stop/1,
+         destroy/2,
          put/3,
          get/2,
          delete/2,
@@ -23,9 +24,13 @@ start(Name, Options) ->
                                        {write_concurrency, true}] ++ Options),
                   options = Options}}.
 
--spec stop(loki:backend(), loki:name()) -> ok.
-stop(#backend{ref = Ref}, _Name) ->
+-spec stop(loki:backend()) -> ok.
+stop(#backend{ref = Ref}) ->
     ets:delete(Ref),
+    ok.
+
+-spec destroy(loki:backend(), loki:name()) -> ok.
+destroy(_Backend, _Name) ->
     ok.
 
 -spec put(loki:backend(), loki:key(), loki:value()) -> ok.

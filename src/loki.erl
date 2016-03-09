@@ -15,6 +15,7 @@
 
 -export([start/3,
          stop/1,
+         destroy/1,
          put/3, put/4,
          get/2,
          delete/2,
@@ -66,9 +67,15 @@ start(Name, Config, Options) ->
 
 %% @doc Stop the store
 -spec stop(store()) -> ok | error().
-stop(#store{mod = Mod, lock_table = LockTable, backend = Backend, name = Name}) ->
-    ok = Mod:stop(Backend, Name),
+stop(#store{mod = Mod, lock_table = LockTable, backend = Backend}) ->
+    ok = Mod:stop(Backend),
     ok = loki_lock:delete(LockTable).
+
+%% @doc Delete any file based key-value backend
+-spec destroy(store()) -> ok | error().
+destroy(#store{mod = Mod, backend = Backend, name = Name} = Store) ->
+    ok = stop(Store),
+    ok = Mod:destroy(Backend, Name).
 
 %% @doc Put key value into store. Overwrites existing value.
 -spec put(store(), key(), value()) -> ok | error().

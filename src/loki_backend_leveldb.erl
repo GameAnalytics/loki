@@ -3,7 +3,8 @@
 -include("loki.hrl").
 
 -export([start/2,
-         stop/2,
+         stop/1,
+         destroy/2,
          put/3,
          get/2,
          delete/2,
@@ -33,15 +34,19 @@ start(Name, Options) ->
             Error
     end.
 
--spec stop(loki:backend(), loki:name()) -> ok.
-stop(#backend{ref = Ref, options = Options}, Name) ->
+-spec stop(loki:backend()) -> ok.
+stop(#backend{ref = Ref}) ->
+    eleveldb:close(Ref),
+    ok.
+
+-spec destroy(loki:backend(), loki:name()) -> ok.
+destroy(#backend{options = Options}, Name) ->
     DbOpts = proplists:get_value(db_opts, Options,
                                  [{create_if_missing, true}]),
     Path = case proplists:get_value(db_dir, Options) of
                undefined -> path(Name);
                Dir       -> filename:join(Dir, Name)
            end,
-    eleveldb:close(Ref),
     eleveldb:destroy(Path, DbOpts),
     file:del_dir(Path),
     ok.
