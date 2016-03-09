@@ -1,4 +1,4 @@
--module(loki_backend_leveldb).
+-module(loki_backend_rocksdb).
 
 -include("loki.hrl").
 
@@ -25,7 +25,7 @@ start(Name, Options) ->
 
     filelib:ensure_dir(filename:join(Path, "dummy")),
 
-    case eleveldb:open(Path, DbOpts) of
+    case erocksdb:open(Path, DbOpts, []) of
         {ok, Ref} ->
             {ok, #backend{ref = Ref,
                           options = Options}};
@@ -41,20 +41,20 @@ stop(#backend{ref = Ref, options = Options}, Name) ->
                undefined -> path(Name);
                Dir       -> filename:join(Dir, Name)
            end,
-    eleveldb:close(Ref),
-    eleveldb:destroy(Path, DbOpts),
+    erocksdb:close(Ref),
+    erocksdb:destroy(Path, DbOpts),
     file:del_dir(Path),
     ok.
 
 -spec put(loki:backend(), loki:key(), loki:value()) -> ok.
 put(#backend{ref = Ref}, Key, Value) ->
-    eleveldb:put(Ref, enc(Key), enc(Value),
+    erocksdb:put(Ref, enc(Key), enc(Value),
                  [{sync, true}]),
     ok.
 
 -spec get(loki:backend(), loki:key()) -> {ok, loki:value()} | loki:error().
 get(#backend{ref = Ref}, Key) ->
-    case eleveldb:get(Ref, enc(Key), []) of
+    case erocksdb:get(Ref, enc(Key), []) of
         {ok, Val} -> {ok, dec(Val)};
         not_found -> {error, not_found};
         Error -> Error
@@ -62,7 +62,7 @@ get(#backend{ref = Ref}, Key) ->
 
 -spec delete(loki:backend(), loki:key()) -> ok.
 delete(#backend{ref = Ref}, Key) ->
-    eleveldb:delete(Ref, enc(Key), [{sync, true}]),
+    erocksdb:delete(Ref, enc(Key), [{sync, true}]),
     ok.
 
 -spec update(loki:backend(), loki:key(),
@@ -90,15 +90,15 @@ update_value(Backend, Key, NewValue, Fun) ->
 -spec fold(loki:backend(),
            fun((loki:key(), loki:value(), term()) -> term()), term()) -> term().
 fold(#backend{ref = Ref}, Fun, AccIn) ->
-    eleveldb:foldl(Ref, fun({Key, Value}, Acc) ->
-                                Fun(Key, Value, Acc)
+    erocksdb:fold(Ref, fun({Key, Value}, Acc) ->
+                                Fun(dec(Key), dec(Value), Acc)
                         end, AccIn, []).
 
 -spec from_list(loki:backend(), list({loki:key(), loki:value()})) ->
     ok | loki:error().
 from_list(#backend{ref = Ref}, List) ->
-    Ops = [{put, K, V} || {K, V} <- List],
-    eleveldb:write(Ref, Ops, [{sync, true}]),
+    Ops = [{put, enc(K), enc(V)} || {K, V} <- List],
+    erocksdb:write(Ref, Ops, [{sync, true}]),
     ok.
 
 -spec to_list(loki:backend()) -> list({loki:key(), loki:value()}).

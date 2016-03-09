@@ -11,6 +11,8 @@ loki_test_() ->
       {"List import export", fun list_import_export/0}
      ]}.
 
+-define(OPTIONS, [{backend, loki_backend_rocksdb}]).
+
 setup() ->
     application:start(loki).
 
@@ -18,7 +20,7 @@ teardown(_) ->
     application:stop(loki).
 
 simple_run() ->
-    {ok, Store} = loki:start(test_kv, [], []),
+    {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
     Key = key,
     Value = 1,
 
@@ -39,16 +41,18 @@ simple_run() ->
     ok = loki:stop(Store).
 
 fold() ->
-    {ok, Store} = loki:start(test_kv, [], []),
+    {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
 
     [loki:put(Store, E, E) || E <- lists:seq(1, 100)],
 
     Sum = loki:fold(Store, fun(_K, V, Acc) -> Acc + V end, 0),
 
-    ?assertEqual(100 * 101 div 2, Sum).
+    ?assertEqual(100 * 101 div 2, Sum),
+
+    ok = loki:stop(Store).
 
 list_import_export() ->
-    {ok, Store} = loki:start(test_kv, [], []),
+    {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
 
     List = [{E, E} || E <- lists:seq(1, 100)],
 
@@ -56,4 +60,6 @@ list_import_export() ->
 
     ResultList = loki:to_list(Store),
 
-    ?assertEqual(List, lists:sort(ResultList)).
+    ?assertEqual(List, lists:sort(ResultList)),
+
+    ok = loki:stop(Store).
