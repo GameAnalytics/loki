@@ -38,7 +38,7 @@ simple_run() ->
     {ok, ReceivedValue3} = loki:get(Store, Key),
     ?assertEqual(Value + 101, ReceivedValue3),
 
-    ok = loki:stop(Store).
+    ok = loki:destroy(Store).
 
 fold() ->
     {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
@@ -49,7 +49,7 @@ fold() ->
 
     ?assertEqual(100 * 101 div 2, Sum),
 
-    ok = loki:stop(Store).
+    ok = loki:destroy(Store).
 
 list_import_export() ->
     {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
@@ -62,4 +62,4 @@ list_import_export() ->
 
     ?assertEqual(List, lists:sort(ResultList)),
 
-    ok = loki:stop(Store).
+    ok = loki:destroy(Store).
