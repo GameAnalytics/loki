@@ -12,7 +12,9 @@
          update_value/4,
          fold/3,
          from_list/2,
-         to_list/1
+         to_list/1,
+         checkpoint/3,
+         from_checkpoint/3
         ]).
 
 %% TODO Do we need a heir?
@@ -90,3 +92,26 @@ from_list(#backend{ref = Ref}, List) ->
 -spec to_list(loki:backend()) -> list({loki:key(), loki:value()}).
 to_list(#backend{ref = Ref}) ->
     ets:tab2list(Ref).
+
+-spec checkpoint(loki:backend(), loki:name(), loki:path()) -> ok | loki:error().
+checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
+    FullPath = get_filename(Path, Name),
+    ok = filelib:ensure_dir(FullPath),
+    ets:tab2file(Ref, FullPath),
+    {ok, Backend}.
+
+-spec from_checkpoint(loki:name(), list(), loki:path()) ->
+    {ok, loki:backend()} | loki:error().
+from_checkpoint(Name, Options, Path) ->
+    FullPath = get_filename(Path, Name),
+    ok = filelib:ensure_dir(FullPath),
+    {ok, Ref} = ets:file2tab(FullPath),
+    {ok, #backend{ref = Ref,
+                  options = Options}}.
+
+%%--------------------------------------------------------------------
+%% Internal functions
+%%--------------------------------------------------------------------
+
+get_filename(Path, Name) ->
+    filename:join([Path, Name]) ++ ".ets".

@@ -23,7 +23,9 @@
          update_value/4, update_value/5,
          fold/3,
          from_list/2,
-         to_list/1
+         to_list/1,
+         checkpoint/2,
+         from_checkpoint/4
         ]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
@@ -37,6 +39,7 @@
 -type key() :: term().
 -type value() :: term().
 -type error() :: {error, term()}.
+-type path() :: string().
 
 -export_type([store/0,
               name/0,
@@ -56,14 +59,8 @@
 -spec start(name(), list(), list()) -> {ok, store()} | error().
 start(Name, Config, Options) ->
     Mod = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
-    {ok, LockTable} = loki_lock:new(),
-    %% TODO check return values
     {ok, Backend} = Mod:start(Name, Config),
-    {ok, #store{name = Name,
-                mod = Mod,
-                backend = Backend,
-                lock_table = LockTable,
-                options = Options}}.
+    do_start(Name, Options, Mod, Backend).
 
 %% @doc Stop the store
 -spec stop(store()) -> ok | error().
@@ -149,6 +146,24 @@ from_list(#store{mod = Mod, backend = Backend}, List) ->
 to_list(#store{mod = Mod, backend = Backend}) ->
     Mod:to_list(Backend).
 
+%% @doc Create a complete backup of the database at the given absolute path
+-spec checkpoint(store(), path()) -> {ok, store()} | error().
+checkpoint(#store{mod = Mod, backend = Backend, name = Name} = Store, Path) ->
+     case Mod:checkpoint(Backend, Name, Path) of
+         {ok, NewBackend} ->
+             {ok, Store#store{backend = NewBackend}};
+         Error ->
+             Error
+     end.
+
+%% @doc Start a new instance of loki with specified backend (ets backend by
+%% default) from a given checkpoint
+-spec from_checkpoint(name(), list(), list(), path()) -> {ok, store()} | error().
+from_checkpoint(Name, Config, Options, Path) ->
+    Mod = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
+    {ok, Backend} = Mod:from_checkpoint(Name, Config, Path),
+    do_start(Name, Options, Mod, Backend).
+
 %%--------------------------------------------------------------------
 %% Internal functions
 %%--------------------------------------------------------------------
@@ -194,3 +209,11 @@ lock_exec(LockTable, Key, Fun, Start, Timeout) ->
                     Result
             end
     end.
+
+do_start(Name, Options, Mod, Backend) ->
+    {ok, LockTable} = loki_lock:new(),
+    {ok, #store{name = Name,
+                mod = Mod,
+                backend = Backend,
+                lock_table = LockTable,
+                options = Options}}.

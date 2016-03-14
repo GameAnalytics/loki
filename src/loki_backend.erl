@@ -38,6 +38,14 @@
                fun((loki:key(), loki:value(), term()) -> term()), term()) ->
     term().
 
--callback from_list(loki:backend(), list({loki:key(), loki:value()})) -> ok.
+-callback from_list(loki:backend(), list({loki:key(), loki:value()})) ->
+    ok.
 
--callback to_list(loki:backend()) -> list({loki:key(), loki:value()}).
+-callback to_list(loki:backend()) ->
+    list({loki:key(), loki:value()}).
+
+-callback checkpoint(loki:backend(), loki:name(), loki:path()) ->
+    {ok, loki:backend()} | loki:error().
+
+-callback from_checkpoint(loki:name(), list(), loki:path()) ->
+    {ok, loki:backend()} | loki:error().

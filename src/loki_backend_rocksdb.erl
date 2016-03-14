@@ -12,15 +12,14 @@
          update_value/4,
          fold/3,
          from_list/2,
-         to_list/1
+         to_list/1,
+         checkpoint/3,
+         from_checkpoint/3
         ]).
 
 -spec start(loki:name(), list()) -> {ok, loki:ref()} | loki:error().
 start(Name, Options) ->
-    Path = case proplists:get_value(db_dir, Options) of
-               undefined -> path(Name);
-               Dir       -> filename:join(Dir, Name)
-           end,
+    Path = db_path(Name, Options),
     DbOpts = proplists:get_value(db_opts, Options,
                                  [{create_if_missing, true}]),
 
@@ -41,12 +40,9 @@ stop(#backend{ref = Ref}) ->
 
 -spec destroy(loki:backend(), loki:name()) -> ok.
 destroy(#backend{options = Options}, Name) ->
+    Path = db_path(Name, Options),
     DbOpts = proplists:get_value(db_opts, Options,
                                  [{create_if_missing, true}]),
-    Path = case proplists:get_value(db_dir, Options) of
-               undefined -> path(Name);
-               Dir       -> filename:join(Dir, Name)
-           end,
     erocksdb:destroy(Path, DbOpts),
     file:del_dir(Path),
     ok.
@@ -110,6 +106,41 @@ from_list(#backend{ref = Ref}, List) ->
 to_list(Backend) ->
     fold(Backend, fun(Key, Value, Acc) -> [{Key, Value} | Acc] end, []).
 
+-spec checkpoint(loki:backend(), loki:name(), loki:path()) ->
+    ok | loki:error().
+checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
+    FullPath = full_path(Path, Name),
+    ok = filelib:ensure_dir(Path),
+    ok = erocksdb:checkpoint(Ref, FullPath),
+    os:cmd("cd " ++ Path ++
+           "; tar -czf " ++ tar_file(Name) ++ " " ++ path(Name)),
+    ec_file:remove(FullPath, [recursive]),
+    {ok, Backend}.
+
+-spec from_checkpoint(loki:name(), list(), loki:path()) ->
+    {ok, loki:backend()} | loki:error().
+from_checkpoint(Name, Options, Path) ->
+    DbPath = db_path(Name, Options),
+
+    %% Ensure target directory is empty
+    ec_file:remove(DbPath, [recursive]),
+
+    %% Copy to target from backup
+    ok = filelib:ensure_dir(DbPath),
+    os:cmd("cd " ++ Path ++
+           "; tar -xzf " ++ tar_file(Name) ++ " -C " ++ current_full_path()),
+    start(Name, Options).
+
+%%--------------------------------------------------------------------
+%% Internal functions
+%%--------------------------------------------------------------------
+
+db_path(Name, Options) ->
+    case proplists:get_value(db_dir, Options) of
+        undefined -> path(Name);
+        Dir       -> full_path(Dir, Name)
+    end.
+
 enc(Object) ->
     term_to_binary(Object).
 
@@ -118,3 +149,12 @@ dec(Object) ->
 
 path(Name) ->
     erlang:atom_to_list(Name).
+
+full_path(Path, Name) ->
+    filename:join([Path, Name]).
+
+tar_file(Name) when is_atom(Name) ->
+    path(Name) ++ ".tar.gz".
+
+current_full_path() ->
+    filename:absname("").
