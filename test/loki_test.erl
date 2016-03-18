@@ -77,7 +77,7 @@ checkpoint_restore() ->
     ok = loki:from_list(Store0, List),
 
     Path = "/tmp/loki/",
-    ec_file:remove(Path ++ erlang:atom_to_list(Name), [recursive]),
+    ec_file:remove(Path ++ loki_util:to_list(Name), [recursive]),
 
     {ok, NewStore0} = loki:checkpoint(Store0, Path),
     ok = loki:destroy(NewStore0),

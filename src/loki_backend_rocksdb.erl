@@ -117,17 +117,19 @@ to_list(Backend) ->
 -spec checkpoint(loki:backend(), loki:name(), loki:path()) ->
     ok | loki:error().
 checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
-    FullPath = full_path(Path, Name),
+    NameStr= loki_util:to_list(Name),
+    FullPath = full_path(Path, NameStr),
     ok = filelib:ensure_dir(Path),
     ok = erocksdb:checkpoint(Ref, FullPath),
     os:cmd("cd " ++ Path ++
-           "; tar -czf " ++ tar_file(Name) ++ " " ++ path(Name)),
+           "; tar -czf " ++ tar_file(NameStr) ++ " " ++ NameStr),
     ec_file:remove(FullPath, [recursive]),
     {ok, Backend}.
 
 -spec from_checkpoint(loki:name(), list(), loki:path()) ->
     {ok, loki:backend()} | loki:error().
 from_checkpoint(Name, Options, Path) ->
+    NameStr = loki_util:to_list(Name),
     DbPath = db_path(Name, Options),
 
     %% Ensure target directory is empty
@@ -136,7 +138,7 @@ from_checkpoint(Name, Options, Path) ->
     %% Copy to target from backup
     ok = filelib:ensure_dir(DbPath),
     os:cmd("cd " ++ Path ++
-           "; tar -xzf " ++ tar_file(Name) ++ " -C " ++ current_full_path()),
+           "; tar -xzf " ++ tar_file(NameStr) ++ " -C " ++ current_full_path()),
     start(Name, Options).
 
 %%--------------------------------------------------------------------
@@ -144,9 +146,10 @@ from_checkpoint(Name, Options, Path) ->
 %%--------------------------------------------------------------------
 
 db_path(Name, Options) ->
+    NameStr = loki_util:to_list(Name),
     case proplists:get_value(db_dir, Options) of
-        undefined -> path(Name);
-        Dir       -> full_path(Dir, Name)
+        undefined -> NameStr;
+        Dir       -> full_path(Dir, NameStr)
     end.
 
 enc(Object) ->
@@ -155,14 +158,11 @@ enc(Object) ->
 dec(Object) ->
     binary_to_term(Object).
 
-path(Name) ->
-    erlang:atom_to_list(Name).
-
 full_path(Path, Name) ->
     filename:join([Path, Name]).
 
-tar_file(Name) when is_atom(Name) ->
-    path(Name) ++ ".tar.gz".
+tar_file(NameStr) ->
+    NameStr ++ ".tar.gz".
 
 current_full_path() ->
     filename:absname("").

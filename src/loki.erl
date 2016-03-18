@@ -35,7 +35,7 @@
 
 -type store() :: #store{}.
 -type backend() :: #backend{}.
--type name() :: atom().
+-type name() :: atom() | string() | binary() | integer().
 -type ref() :: term(). %% TODO list out all specific types of backend returns
 -type key() :: term().
 -type value() :: term().
