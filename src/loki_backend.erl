@@ -38,6 +38,10 @@
                fun((loki:key(), loki:value(), term()) -> term()), term()) ->
     term().
 
+-callback fold_keys(loki:backend(),
+                    fun((loki:key(), term()) -> term()), term()) ->
+    term().
+
 -callback from_list(loki:backend(), list({loki:key(), loki:value()})) ->
     ok.
 

@@ -49,6 +49,10 @@ fold() ->
 
     ?assertEqual(100 * 101 div 2, Sum),
 
+    SumKeys = loki:fold_keys(Store, fun(K, Acc) -> Acc + K end, 0),
+
+    ?assertEqual(100 * 101 div 2, SumKeys),
+
     ok = loki:destroy(Store).
 
 list_import_export() ->

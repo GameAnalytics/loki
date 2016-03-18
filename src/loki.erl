@@ -22,6 +22,7 @@
          update/3, update/4,
          update_value/4, update_value/5,
          fold/3,
+         fold_keys/3,
          from_list/2,
          to_list/1,
          checkpoint/2,
@@ -135,6 +136,11 @@ update_value(#store{mod = Mod, lock_table = LockTable, backend = Backend},
 -spec fold(store(), fun((key(), value(), term()) -> term()), term()) -> term().
 fold(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
     Mod:fold(Backend, Fun, Acc).
+
+%% @doc Fold over all keys
+-spec fold_keys(store(), fun((key(), term()) -> term()), term()) -> term().
+fold_keys(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
+    Mod:fold_keys(Backend, Fun, Acc).
 
 %% @doc Insert key value pairs into loki from the given list
 -spec from_list(store(), list({key(), value()})) -> ok.

@@ -11,6 +11,7 @@
          update/3,
          update_value/4,
          fold/3,
+         fold_keys/3,
          from_list/2,
          to_list/1,
          checkpoint/3,
@@ -94,6 +95,13 @@ fold(#backend{ref = Ref}, Fun, AccIn) ->
     erocksdb:fold(Ref, fun({Key, Value}, Acc) ->
                                 Fun(dec(Key), dec(Value), Acc)
                         end, AccIn, []).
+
+-spec fold_keys(loki:backend(),
+                fun((loki:key(), term()) -> term()), term()) -> term().
+fold_keys(#backend{ref = Ref}, Fun, AccIn) ->
+    erocksdb:fold_keys(Ref, fun(Key, Acc) ->
+                                    Fun(dec(Key), Acc)
+                            end, AccIn, []).
 
 -spec from_list(loki:backend(), list({loki:key(), loki:value()})) ->
     ok | loki:error().

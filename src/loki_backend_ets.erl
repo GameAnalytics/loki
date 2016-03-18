@@ -11,6 +11,7 @@
          update/3,
          update_value/4,
          fold/3,
+         fold_keys/3,
          from_list/2,
          to_list/1,
          checkpoint/3,
@@ -81,6 +82,13 @@ update_value(Backend, Key, NewValue, Fun) ->
 fold(#backend{ref = Ref}, Fun, AccIn) ->
     ets:foldl(fun({Key, Value}, Acc) ->
                       Fun(Key, Value, Acc)
+              end, AccIn, Ref).
+
+-spec fold_keys(loki:backend(),
+                fun((loki:key(), term()) -> term()), term()) -> term().
+fold_keys(#backend{ref = Ref}, Fun, AccIn) ->
+    ets:foldl(fun({Key, _Value}, Acc) ->
+                      Fun(Key, Acc)
               end, AccIn, Ref).
 
 -spec from_list(loki:backend(), list({loki:key(), loki:value()})) ->
