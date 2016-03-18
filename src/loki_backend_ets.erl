@@ -55,7 +55,7 @@ delete(#backend{ref = Ref}, Key) ->
     ok.
 
 -spec update(loki:backend(), loki:key(),
-             fun((loki:value()) -> loki:value())) ->
+             fun((loki:key(), loki:value()) -> loki:value())) ->
     ok | loki:error().
 update(Backend, Key, Fun) ->
     Value = case ?MODULE:get(Backend, Key) of
@@ -66,7 +66,7 @@ update(Backend, Key, Fun) ->
     ?MODULE:put(Backend, Key, UpdatedValue).
 
 -spec update_value(loki:backend(), loki:key(), loki:value(),
-                   fun((loki:value(), loki:value()) -> loki:value())) ->
+                   fun((loki:key(), loki:value(), loki:value()) -> loki:value())) ->
     ok | loki:error().
 update_value(Backend, Key, NewValue, Fun) ->
     OldValue = case ?MODULE:get(Backend, Key) of
