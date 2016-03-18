@@ -13,7 +13,7 @@
 
 -include("loki.hrl").
 
--export([start/3,
+-export([start/1, start/3,
          stop/1,
          destroy/1,
          put/3, put/4,
@@ -52,6 +52,11 @@
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
+
+%% @doc Start new instance of loki with default options
+-spec start(loki:name()) -> {ok, store()} | error().
+start(Name) ->
+    start(Name, [], []).
 
 %% @doc Start a new instance of loki with specified backend (ets backend by
 %% default).
