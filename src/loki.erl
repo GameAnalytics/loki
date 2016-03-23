@@ -26,7 +26,8 @@
          from_list/2,
          to_list/1,
          checkpoint/2,
-         from_checkpoint/4
+         from_checkpoint/4,
+         backend_ref/1
         ]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
@@ -174,6 +175,12 @@ from_checkpoint(Name, Config, Options, Path) ->
     Mod = proplists:get_value(backend, Options, ?DEFAULT_BACKEND),
     {ok, Backend} = Mod:from_checkpoint(Name, Config, Path),
     do_start(Name, Options, Mod, Backend).
+
+%% @doc Return the backend reference used. This is mainly to use the functions
+%% that are targeted only for the specific backends
+-spec backend_ref(store()) -> reference().
+backend_ref(#store{backend = Backend}) ->
+    Backend#backend.ref.
 
 %%--------------------------------------------------------------------
 %% Internal functions
