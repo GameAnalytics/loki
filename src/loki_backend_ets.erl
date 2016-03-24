@@ -117,7 +117,8 @@ checkpoint_name(Name) ->
 checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
     FullPath = get_filename(Path, Name),
     ok = filelib:ensure_dir(FullPath),
-    ets:tab2file(Ref, FullPath),
+    ok = ets_backports:tab2file(Ref, FullPath, [{extended_info, [object_count]},
+                                                {sync, true}]),
     {ok, Backend}.
 
 -spec from_checkpoint(loki:name(), list(), loki:path()) ->
@@ -125,7 +126,7 @@ checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
 from_checkpoint(Name, Options, Path) ->
     FullPath = get_filename(Path, Name),
     ok = filelib:ensure_dir(FullPath),
-    {ok, Ref} = ets:file2tab(FullPath),
+    {ok, Ref} = ets_backports:file2tab(FullPath),
     {ok, #backend{ref = Ref,
                   options = Options}}.
 
