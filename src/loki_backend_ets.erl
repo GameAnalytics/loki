@@ -23,9 +23,11 @@
 
 -spec start(loki:name(), list()) -> {ok, loki:ref()} | loki:error().
 start(Name, Options) ->
-    {ok, #backend{ref = ets:new(Name, [public,
-                                       {read_concurrency, true},
-                                       {write_concurrency, true}] ++ Options),
+    NameAtom = loki_util:to_atom(Name),
+    {ok, #backend{ref = ets:new(NameAtom,
+                                [public,
+                                 {read_concurrency, true},
+                                 {write_concurrency, true}] ++ Options),
                   options = Options}}.
 
 -spec stop(loki:backend()) -> ok.
