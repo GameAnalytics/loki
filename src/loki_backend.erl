@@ -48,6 +48,9 @@
 -callback to_list(loki:backend()) ->
     list({loki:key(), loki:value()}).
 
+-callback checkpoint_name(loki:name()) ->
+    string().
+
 -callback checkpoint(loki:backend(), loki:name(), loki:path()) ->
     {ok, loki:backend()} | loki:error().
 

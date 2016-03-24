@@ -25,6 +25,7 @@
          fold_keys/3,
          from_list/2,
          to_list/1,
+         checkpoint_name/1,
          checkpoint/2,
          from_checkpoint/4,
          backend_ref/1
@@ -157,6 +158,12 @@ from_list(#store{mod = Mod, backend = Backend}, List) ->
 -spec to_list(store()) -> list({key(), value()}).
 to_list(#store{mod = Mod, backend = Backend}) ->
     Mod:to_list(Backend).
+
+%% @doc Get the name of the checkpoint that'll be created when
+%% @see checkpoint/2 is called
+-spec checkpoint_name(store()) -> string().
+checkpoint_name(#store{mod = Mod, name = Name}) ->
+    Mod:checkpoint_name(Name).
 
 %% @doc Create a complete backup of the database at the given absolute path
 -spec checkpoint(store(), path()) -> {ok, store()} | error().

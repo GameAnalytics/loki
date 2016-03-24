@@ -14,6 +14,7 @@
          fold_keys/3,
          from_list/2,
          to_list/1,
+         checkpoint_name/1,
          checkpoint/3,
          from_checkpoint/3
         ]).
@@ -113,6 +114,10 @@ from_list(#backend{ref = Ref}, List) ->
 -spec to_list(loki:backend()) -> list({loki:key(), loki:value()}).
 to_list(Backend) ->
     fold(Backend, fun(Key, Value, Acc) -> [{Key, Value} | Acc] end, []).
+
+-spec checkpoint_name(loki:name()) -> string().
+checkpoint_name(Name) ->
+    tar_file(loki_util:to_list(Name)).
 
 %% eleveldb does not support live checkpoints/snapshots. We stop the DB, take
 %% a copy of it and restart it as a workaround.

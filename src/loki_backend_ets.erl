@@ -14,6 +14,7 @@
          fold_keys/3,
          from_list/2,
          to_list/1,
+         checkpoint_name/1,
          checkpoint/3,
          from_checkpoint/3
         ]).
@@ -101,6 +102,10 @@ from_list(#backend{ref = Ref}, List) ->
 to_list(#backend{ref = Ref}) ->
     ets:tab2list(Ref).
 
+-spec checkpoint_name(loki:name()) -> string().
+checkpoint_name(Name) ->
+    loki_util:to_list(Name) ++ ".ets".
+
 -spec checkpoint(loki:backend(), loki:name(), loki:path()) -> ok | loki:error().
 checkpoint(#backend{ref = Ref} = Backend, Name, Path) ->
     FullPath = get_filename(Path, Name),
@@ -122,4 +127,4 @@ from_checkpoint(Name, Options, Path) ->
 %%--------------------------------------------------------------------
 
 get_filename(Path, Name) ->
-    filename:join([Path, Name]) ++ ".ets".
+    filename:join([Path, checkpoint_name(Name)]).
