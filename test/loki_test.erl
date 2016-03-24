@@ -34,7 +34,7 @@ simple_run() ->
     {ok, ReceivedValue2} = loki:get(Store, Key),
     ?assertEqual(Value + 1, ReceivedValue2),
 
-    ok = loki:update_value(Store, Key, 100, fun(_K, OldV, NewV) -> OldV + NewV  end),
+    ok = loki:update_value(Store, Key, 100, fun(_K, NewV, OldV) -> OldV + NewV  end),
     {ok, ReceivedValue3} = loki:get(Store, Key),
     ?assertEqual(Value + 101, ReceivedValue3),
 

@@ -77,7 +77,7 @@ update_value(Backend, Key, NewValue, Fun) ->
                    {error, not_found} -> undefined;
                    {ok, V}            -> V
                end,
-    UpdatedValue = Fun(Key, OldValue, NewValue),
+    UpdatedValue = Fun(Key, NewValue, OldValue),
     ?MODULE:put(Backend, Key, UpdatedValue).
 
 -spec fold(loki:backend(),
