@@ -27,7 +27,7 @@
          to_list/1,
          checkpoint_name/1,
          checkpoint/2,
-         from_checkpoint/4,
+         from_checkpoint/2, from_checkpoint/4,
          backend_ref/1
         ]).
 
@@ -174,6 +174,11 @@ checkpoint(#store{mod = Mod, backend = Backend, name = Name} = Store, Path) ->
          Error ->
              Error
      end.
+
+%% @doc Restore loki from checkpoint with default options
+-spec from_checkpoint(name(), path()) -> {ok, store()} | error().
+from_checkpoint(Name, Path) ->
+    from_checkpoint(Name, [], [], Path).
 
 %% @doc Start a new instance of loki with specified backend (ets backend by
 %% default) from a given checkpoint
