@@ -15,21 +15,20 @@
 
 -export([start/1, start/3,
          stop/1,
-         destroy/1,
-         put/3, put/4,
+         destroy/1]).
+-export([put/3, put/4,
          get/2,
          delete/2,
          update/3, update/4,
-         update_value/4, update_value/5,
-         fold/3,
-         fold_keys/3,
-         from_list/2,
-         to_list/1,
-         checkpoint_name/1,
+         update_value/4, update_value/5]).
+-export([fold/3,
+         fold_keys/3]).
+-export([from_list/2,
+         to_list/1]).
+-export([checkpoint_name/1,
          checkpoint/2,
-         from_checkpoint/2, from_checkpoint/4,
-         backend_ref/1
-        ]).
+         from_checkpoint/2, from_checkpoint/4]).
+-export([backend_ref/1]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
 

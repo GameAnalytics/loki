@@ -4,20 +4,19 @@
 
 -export([start/2,
          stop/1,
-         destroy/2,
-         put/3,
+         destroy/2]).
+-export([put/3,
          get/2,
          delete/2,
          update/3,
-         update_value/4,
-         fold/3,
-         fold_keys/3,
-         from_list/2,
-         to_list/1,
-         checkpoint_name/1,
+         update_value/4]).
+-export([fold/3,
+         fold_keys/3]).
+-export([from_list/2,
+         to_list/1]).
+-export([checkpoint_name/1,
          checkpoint/3,
-         from_checkpoint/3
-        ]).
+         from_checkpoint/3]).
 
 %% TODO Do we need a heir?
 
