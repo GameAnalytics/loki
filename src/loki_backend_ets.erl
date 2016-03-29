@@ -17,6 +17,7 @@
 -export([checkpoint_name/1,
          checkpoint/3,
          from_checkpoint/3]).
+-export([status/1, status/2]).
 
 %% TODO Do we need a heir?
 
@@ -122,6 +123,14 @@ from_checkpoint(Name, Options, Path) ->
     {ok, Ref} = ets:file2tab(FullPath),
     {ok, #backend{ref = Ref,
                   options = Options}}.
+
+-spec status(loki:backend()) -> term().
+status(#backend{ref = Ref}) ->
+    ets:info(Ref).
+
+-spec status(loki:backend(), term()) -> term().
+status(#backend{ref = Ref}, Key) ->
+    ets:info(Ref, Key).
 
 %%--------------------------------------------------------------------
 %% Internal functions

@@ -56,3 +56,9 @@
 
 -callback from_checkpoint(loki:name(), list(), loki:path()) ->
     {ok, loki:backend()} | loki:error().
+
+-callback status(loki:backend()) ->
+    term().
+
+-callback status(loki:backend(), term()) ->
+    term().

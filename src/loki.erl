@@ -28,7 +28,8 @@
 -export([checkpoint_name/1,
          checkpoint/2,
          from_checkpoint/2, from_checkpoint/4]).
--export([backend_ref/1]).
+-export([backend_ref/1,
+         status/1, status/2]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
 
@@ -192,6 +193,18 @@ from_checkpoint(Name, Config, Options, Path) ->
 -spec backend_ref(store()) -> reference().
 backend_ref(#store{backend = Backend}) ->
     Backend#backend.ref.
+
+%% @doc Get the status of the backend. Note: the return format is current
+%% backend dependant
+-spec status(store()) -> term().
+status(#store{mod = Mod, backend = Backend}) ->
+    Mod:status(Backend).
+
+%% @doc Get the status of the backend for specified key. Note: the return
+%% format is current backend dependent
+-spec status(store(), term()) -> term().
+status(#store{mod = Mod, backend = Backend}, Key) ->
+    Mod:status(Backend, Key).
 
 %%--------------------------------------------------------------------
 %% Internal functions

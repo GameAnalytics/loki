@@ -17,6 +17,7 @@
 -export([checkpoint_name/1,
          checkpoint/3,
          from_checkpoint/3]).
+-export([status/1, status/2]).
 
 -spec start(loki:name(), list()) -> {ok, loki:ref()} | loki:error().
 start(Name, Options) ->
@@ -148,6 +149,14 @@ from_checkpoint(Name, Options, Path) ->
            "; tar -xzf " ++ tar_file(NameStr) ++ " -C " ++ current_full_path()),
 
     start(Name, Options).
+
+-spec status(loki:backend()) -> term().
+status(#backend{ref = Ref}) ->
+    eleveldb:status(Ref, <<"leveldb.stats">>).
+
+-spec status(loki:backend(), term()) -> term().
+status(#backend{ref = Ref}, Key) ->
+    eleveldb:status(Ref, Key).
 
 %%--------------------------------------------------------------------
 %% Internal functions
