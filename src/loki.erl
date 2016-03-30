@@ -24,7 +24,8 @@
 -export([fold/3,
          fold_keys/3]).
 -export([from_list/2,
-         to_list/1]).
+         to_list/1,
+         keys/1]).
 -export([checkpoint_name/1,
          checkpoint/2,
          from_checkpoint/2, from_checkpoint/4]).
@@ -158,6 +159,11 @@ from_list(#store{mod = Mod, backend = Backend}, List) ->
 -spec to_list(store()) -> list({key(), value()}).
 to_list(#store{mod = Mod, backend = Backend}) ->
     Mod:to_list(Backend).
+
+%% @doc Get all the keys in the store
+-spec keys(store()) -> list(key()).
+keys(#store{mod = Mod, backend = Backend}) ->
+    Mod:keys(Backend).
 
 %% @doc Get the name of the checkpoint that'll be created when
 %% @see checkpoint/2 is called

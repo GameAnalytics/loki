@@ -13,7 +13,8 @@
 -export([fold/3,
          fold_keys/3]).
 -export([from_list/2,
-         to_list/1]).
+         to_list/1,
+         keys/1]).
 -export([checkpoint_name/1,
          checkpoint/3,
          from_checkpoint/3]).
@@ -103,6 +104,10 @@ from_list(#backend{ref = Ref}, List) ->
 -spec to_list(loki:backend()) -> list({loki:key(), loki:value()}).
 to_list(#backend{ref = Ref}) ->
     ets:tab2list(Ref).
+
+-spec keys(loki:backend()) -> list(loki:key()).
+keys(#backend{ref = Ref}) ->
+    ets:select(Ref, [{{'$1','$2'},[],['$1']}]).
 
 -spec checkpoint_name(loki:name()) -> string().
 checkpoint_name(Name) ->
