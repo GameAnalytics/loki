@@ -11,7 +11,8 @@ loki_test_() ->
       {"Checkpoint and restore", fun checkpoint_restore/0}
      ]}.
 
--define(OPTIONS, [{backend, loki_backend_ets}]).
+-define(OPTIONS, [{backend, loki_backend_ets},
+                  {hash_locks, true}]).
 
 setup() ->
     application:start(loki).
@@ -58,13 +59,16 @@ fold() ->
 list_import_export() ->
     {ok, Store} = loki:start(test_kv, [], ?OPTIONS),
 
-    List = [{E, E} || E <- lists:seq(1, 100)],
+    Elements = lists:seq(1, 100),
+    List = [{E, E} || E <- Elements],
 
     ok = loki:from_list(Store, List),
 
     ResultList = loki:to_list(Store),
 
     ?assertEqual(List, lists:sort(ResultList)),
+
+    ?assertEqual(Elements, lists:sort(loki:keys(Store))),
 
     ok = loki:destroy(Store).
 

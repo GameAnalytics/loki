@@ -33,6 +33,7 @@
          status/1, status/2]).
 
 -define(DEFAULT_BACKEND, loki_backend_ets).
+-define(DEFAULT_HASHLOCKS, false).
 
 -define(DEFAULT_TIMEOUT, infinity).
 
@@ -90,9 +91,9 @@ put(Store, Key, Value) ->
 
 %% @doc @see put/3 with timeout
 -spec put(store(), key(), value(), timeout()) -> ok | error().
-put(#store{mod = Mod, lock_table = LockTable, backend = Backend},
-    Key, Value, Timeout) ->
-    lock_exec(LockTable, Key,
+put(#store{mod = Mod, lock_table = LockTable, hash_locks = HashLocks,
+           backend = Backend}, Key, Value, Timeout) ->
+    lock_exec(LockTable, HashLocks, Key,
               fun() -> ok = Mod:put(Backend, Key, Value) end,
               Timeout).
 
@@ -103,8 +104,9 @@ get(#store{mod = Mod, backend = Backend}, Key) ->
 
 %% @doc Delete a key value pair specified by the given key
 -spec delete(store(), key()) -> ok | error().
-delete(#store{mod = Mod, lock_table = LockTable, backend = Backend}, Key) ->
-    lock_exec(LockTable, Key,
+delete(#store{mod = Mod, lock_table = LockTable, hash_locks = HashLocks,
+              backend = Backend}, Key) ->
+    lock_exec(LockTable, HashLocks, Key,
               fun() -> ok = Mod:delete(Backend, Key) end).
 
 %% @doc Update given key with new value obtained by calling given function.
@@ -116,9 +118,9 @@ update(Store, Key, Fun) ->
 %% @doc @see update/3 with timeout.
 -spec update(store(), key(), fun((key(), value()) -> value()), timeout()) ->
     ok | error().
-update(#store{mod = Mod, lock_table = LockTable, backend = Backend}, Key, Fun,
-       Timeout) ->
-    lock_exec(LockTable, Key,
+update(#store{mod = Mod, lock_table = LockTable, hash_locks = HashLocks,
+              backend = Backend}, Key, Fun, Timeout) ->
+    lock_exec(LockTable, HashLocks, Key,
               fun() -> Mod:update(Backend, Key, Fun) end,
               Timeout).
 
@@ -134,9 +136,9 @@ update_value(Store, Key, Value, Fun) ->
 -spec update_value(store(), key(), value(),
                    fun((key(), value(), value()) -> value()), timeout()) ->
     ok | error().
-update_value(#store{mod = Mod, lock_table = LockTable, backend = Backend},
-             Key, Value, Fun, Timeout) ->
-    lock_exec(LockTable, Key,
+update_value(#store{mod = Mod, lock_table = LockTable, hash_locks = HashLocks,
+                    backend = Backend}, Key, Value, Fun, Timeout) ->
+    lock_exec(LockTable, HashLocks, Key,
               fun() -> Mod:update_value(Backend, Key, Value, Fun) end,
               Timeout).
 
@@ -216,6 +218,12 @@ status(#store{mod = Mod, backend = Backend}, Key) ->
 %% Internal functions
 %%--------------------------------------------------------------------
 
+%% Hash the key for the lock table of the option is set
+lock_exec(LockTable, false = _HashLocks, Key, Fun) ->
+    lock_exec(LockTable, Key, Fun);
+lock_exec(LockTable, true = _HashLocks, Key, Fun) ->
+    lock_exec(LockTable, erlang:phash2(Key), Fun).
+
 %% Acquire lock and execute given function, error if lock cannot be acquired
 lock_exec(LockTable, Key, Fun) ->
     case loki_lock:acquire(LockTable, Key) of
@@ -230,32 +238,37 @@ lock_exec(LockTable, Key, Fun) ->
 %% Same as lock_exec/3 but use erlang:yield/0 to release the scheduler and try
 %% again either for ever (infinity) or immediately (0) or given interval.
 %% Note: erlang:yield/0 is equivalent to sleeping for 1ms.
-lock_exec(LockTable, Key, Fun, infinity = Timeout) ->
-    case lock_exec(LockTable, Key, Fun) of
+lock_exec(LockTable, HashLocks, Key, Fun, infinity = Timeout) ->
+    case lock_exec(LockTable, HashLocks, Key, Fun) of
         {error, locked} ->
             true = erlang:yield(),
-            lock_exec(LockTable, Key, Fun, Timeout);
+            lock_exec(LockTable, HashLocks, Key, Fun, Timeout);
         Result ->
             Result
     end;
-lock_exec(LockTable, Key, Fun, 0) ->
-    lock_exec(LockTable, Key, Fun);
-lock_exec(LockTable, Key, Fun, Timeout) ->
+lock_exec(LockTable, HashLocks, Key, Fun, 0) ->
+    lock_exec(LockTable, HashLocks, Key, Fun);
+lock_exec(LockTable, HashLocks, Key, Fun, Timeout) ->
     Start = os:timestamp(),
-    lock_exec(LockTable, Key, Fun, Start, Timeout).
+    lock_exec(LockTable, HashLocks, Key, Fun, Start, Timeout).
 
-lock_exec(LockTable, Key, Fun, Start, Timeout) ->
+lock_exec(LockTable, HashLocks, Key, Fun, Start, Timeout) ->
     case (timer:now_diff(os:timestamp(), Start) div 1000) >= Timeout of
         true ->
             {error, timeout};
         false ->
-            case lock_exec(LockTable, Key, Fun) of
+            case lock_exec(LockTable, HashLocks, Key, Fun) of
                 {error, locked} ->
                     true = erlang:yield(),
-                    lock_exec(LockTable, Key, Fun, Start, Timeout);
+                    lock_exec(LockTable, HashLocks, Key, Fun, Start, Timeout);
                 Result ->
                     Result
             end
+    end.
+
+hash_locks(Options) ->
+    case proplists:get_value(hash_locks, Options, ?DEFAULT_HASHLOCKS) of
+        Value when is_boolean(Value) -> Value
     end.
 
 do_start(Name, Options, Mod, Backend) ->
@@ -264,4 +277,5 @@ do_start(Name, Options, Mod, Backend) ->
                 mod = Mod,
                 backend = Backend,
                 lock_table = LockTable,
+                hash_locks = hash_locks(Options),
                 options = Options}}.
