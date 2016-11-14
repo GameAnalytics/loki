@@ -11,7 +11,8 @@
          update/3,
          update_value/4]).
 -export([fold/3,
-         fold_keys/3]).
+         fold_keys/3,
+         reduce/3]).
 -export([from_list/2,
          to_list/1,
          keys/1]).
@@ -19,6 +20,8 @@
          checkpoint/3,
          from_checkpoint/3]).
 -export([status/1, status/2]).
+
+-behaviour(loki_backend).
 
 %% TODO Do we need a heir?
 
@@ -94,6 +97,19 @@ fold_keys(#backend{ref = Ref}, Fun, AccIn) ->
     ets:foldl(fun({Key, _Value}, Acc) ->
                       Fun(Key, Acc)
               end, AccIn, Ref).
+
+reduce(#backend{ref = Ref}, Fun, BatchSize) ->
+    case ets:match_object(Ref, '_', BatchSize) of
+        {Results, Cont} -> match_next(Cont, Fun, [Fun(Results)]);
+        '$end_of_table' -> []
+    end.
+
+match_next(Cont1, Fun, Result) ->
+    case ets:match(Cont1) of
+        {Results, Cont2} -> match_next(Cont2, Fun, [Fun(Results)|Result]);
+        '$end_of_table'  -> Result
+    end.
+
 
 -spec from_list(loki:backend(), list({loki:key(), loki:value()})) ->
     ok | loki:error().

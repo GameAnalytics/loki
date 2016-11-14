@@ -42,6 +42,10 @@
                     fun((loki:key(), term()) -> term()), term()) ->
     term().
 
+-callback reduce(loki:backend(),
+                 fun((list({loki:key(), loki:value()})) -> term()),
+                 pos_integer()) -> [term()].
+
 -callback from_list(loki:backend(), list({loki:key(), loki:value()})) ->
     ok.
 

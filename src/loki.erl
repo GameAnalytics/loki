@@ -22,7 +22,8 @@
          update/3, update/4,
          update_value/4, update_value/5]).
 -export([fold/3,
-         fold_keys/3]).
+         fold_keys/3,
+         reduce/3]).
 -export([from_list/2,
          to_list/1,
          keys/1]).
@@ -151,6 +152,11 @@ fold(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
 -spec fold_keys(store(), fun((key(), term()) -> term()), term()) -> term().
 fold_keys(#store{mod = Mod, backend = Backend}, Fun, Acc) ->
     Mod:fold_keys(Backend, Fun, Acc).
+
+%% @doc Map batches of keys and values
+-spec reduce(store(), fun(([{key(), value()}]) -> term()), pos_integer()) -> [term()].
+reduce(#store{mod = Mod, backend = Backend}, Fun, BatchSize) ->
+    Mod:reduce(Backend, Fun, BatchSize).
 
 %% @doc Insert key value pairs into loki from the given list
 -spec from_list(store(), list({key(), value()})) -> ok.
