@@ -105,7 +105,7 @@ reduce(#backend{ref = Ref}, Fun, BatchSize) ->
     end.
 
 match_next(Cont1, Fun, Result) ->
-    case ets:match(Cont1) of
+    case ets:match_object(Cont1) of
         {Results, Cont2} -> match_next(Cont2, Fun, [Fun(Results)|Result]);
         '$end_of_table'  -> Result
     end.
